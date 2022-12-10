@@ -1,0 +1,14 @@
+body {
+	width: 99%;
+	max-width: 8in; }
+.noprint {
+	display: none; }
+/* tables */
+table.tablesorter caption, table.normalsTable caption { 
+	font-size: 1.0em; }
+table.tablesorter thead tr th, table.tablesorter tfoot tr th, table.tablesorter thead tr td {
+	font-size: 0.8em; }
+table.tablesorter tbody td, table.tablesorter tfoot td, table.tablesorter tbody th {
+	font-size: 0.8em; }
+
+	
