@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<!-- saved from url=(0033)https://nowdata.rcc-acis.org/hnl/ -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<title>NOWData</title>
+	
+	<link rel="stylesheet" type="text/css" href="./jquery-ui.css">
+	<link rel="stylesheet" type="text/css" media="all" href="./nowdata.css">
+	<link rel="stylesheet" type="text/css" href="./leaflet.css">
+	<link rel="stylesheet" type="text/css" media="print" href="./nowdatap.css">
+	<noscript>
+		<style type="text/css">
+			.input_block { display: none; }
+			.link_block { display: none; }
+			.nojs { display:block; }
+		</style>
+	</noscript>
+	<!-- Global Site Tag (gtag.js) - Google Analytics (implemented 20210407)-->
+	<script type="text/javascript" async="" src="./analytics.js.다운로드"></script><script async="" src="./js"></script>
+	<script>
+		window.dataLayer = window.dataLayer || [];
+		function gtag(){dataLayer.push(arguments);}
+		gtag('js', new Date());
+		gtag('config', 'UA-43434607-1');
+	</script>
+</head>
+<body onload="init_nowdata();" marginwidth="0" marginheight="0">
+<div class="container">
+	<div class="banner">
+		<span>NOWData - NOAA Online Weather Data</span>
+	</div>
+	<div class="nojs">
+		It appears you do not have JavaScript enabled.  Please turn on JavaScript to use this site.
+	</div>
+	<div class="input_block" style="width:25%;">
+		<span>1. Location »</span><br>
+		<div style="text-align:center;">
+			<button id="viewMap" class="ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only" role="button"><span class="ui-button-text">View map</span></button>
+		</div>
+		<select size="10" name="station"><option value="ITOthr 9">Hilo Area</option><option value="HNLthr 9">Honolulu Area</option><option value="OGGthr 9">Kahului Area</option><option value="LIHthr 9">Lihue Area</option><option value="511492 2">Hilo Intl AP, HI</option><option value="511919 2">Honolulu Intl AP, HI</option><option value="512572 2">Kahului Airport, HI</option><option value="US1HIMI0002 6">Kaunakakai 3.5ESE, HI</option><option value="515580 2">Lihue Airport, HI</option><option value="516534 2">Molokai Kaunakak, HI</option></select>
+		<div id="selectedStation" class="ui-helper-hidden">
+			<button id="viewMenu" class="ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only" role="button"><span class="ui-button-text">View station menu</span></button><br>
+			<label>Selected station:</label><br><span class="stationName">Hilo Area</span>
+		</div>
+	</div>
+	<div class="input_block" style="width:30%;">
+		<span>2. Product »</span><br>
+		<div id="product_select" class="ui-hidden-helper"></div>
+		<label><input type="radio" name="product_select" value="StnProduct_moncrt" checked="">Daily data for a month</label><br>
+		<label><input type="radio" name="product_select" value="StnProduct_almanac">Daily almanac</label><br>
+		<label><input type="radio" name="product_select" value="StnProduct_monavg">Monthly summarized data</label><br>
+		<label><input type="radio" name="product_select" value="StnProduct_dayavg">Calendar day summaries</label><br>
+		<label><input type="radio" name="product_select" value="StnProduct_normals">Daily/monthly normals</label><br>
+		<label><input type="radio" name="product_select" value="StnProduct_oneday">Climatology for a day</label><br>
+		<label><input type="radio" name="product_select" value="StnProduct_fldates">First/last dates</label><br>
+		<label><input type="radio" name="product_select" value="StnProduct_dlytmpgrf">Temperature graphs</label><br>
+		<label><input type="radio" name="product_select" value="StnProduct_dlyaccgrf">Accumulation graphs</label><br>
+	</div>
+	<div class="input_block" style="width:34%;">
+		<span>3. Options »</span><br>
+		<div id="option_select"><div id="tdate_area" class="ui-widget ui-helper-reset"><fieldset><label for="tDatepicker">Date:</label><input type="text" class="ui-widget-content ui-corner-all ui-state-default acis-ymRange hasDatepicker" id="tDatepicker" title="Date has the format yyyy-mm"><img class="ui-datepicker-trigger" src="./calicon.gif" alt="Click for calendar" title="Click for calendar"></fieldset></div></div>
+	</div>
+	<div class="input_block" style="width:11%; text-align:center;">
+		<span>4. View »</span><br>
+ 		<button id="go" value="Go" class="ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only" role="button"><span class="ui-button-text">Go</span></button>
+	</div>
+	<br class="clear">
+	<hr>	
+	<div class="input_block" style="width:65%;">
+		<span>Product Description:</span><br>
+		<div id="description">DAILY DATA FOR A MONTH - daily maximum, minimum and average temperature (degrees F), average temperature departure from normal (degrees F), heating and cooling degree days (base 65), precipitation, snowfall and snow depth (inches) for all days of the selected month. Basic monthly summary statistics are also provided.</div>
+	</div>
+	<div class="link_block">
+		<a href="https://www.weather.gov/climateservices/nowdatafaq" target="_blank">- Common questions -</a><br>
+		<a href="mailto:NOWdata@noaa.gov">- Submit a question/comment -</a>
+		<p>
+			<a href="http://www.rcc-acis.org/" target="_blank">
+			<img src="./PoweredbyACIS.gif" width="150" height="49"></a>
+		</p>
+	</div>
+	<br class="clear">
+	<hr>
+	<div class="footer">
+	  	The <a href="http://www.rcc-acis.org/" target="_blank">
+	  	Applied Climate Information System</a> (ACIS) is a joint project of the 
+		<a href="https://www.ncdc.noaa.gov/customer-support/partnerships/regional-climate-centers" target="_blank">
+		Regional Climate Centers</a>, the <a href="https://www.ncdc.noaa.gov/" target="_blank">
+		National Centers for Environmental Information (NCEI)</a> and the <a href="https://www.weather.gov/climateservices/" target="_blank">
+		National Weather Service</a>. Official data and data for additional locations 
+		are available from the Regional Climate Centers and NCEI.
+	</div>
+	<hr>	
+	<div id="map_area" class="ui-helper-hidden" style="top: 35px; left: 0px;">
+		<div id="map_img"></div>
+		<div id="map_msg" class="ui-state-default"></div>
+	</div>
+	
+</div>
+
+<script type="text/javascript" src="./json2.min.js.다운로드"></script>
+<script type="text/javascript" src="./jquery.min.js.다운로드"></script>
+<script type="text/javascript" src="./jquery-migrate-1.2.1.min.js.다운로드"></script>
+<script type="text/javascript" src="./jquery-ui.min.js.다운로드"></script>
+<script type="text/javascript" src="./leaflet.js.다운로드"></script>
+<script type="text/javascript" src="./packages_1.0.2.min.js.다운로드"></script>
+<script type="text/javascript" src="./xmacis_packages_latest.min.js.다운로드"></script>
+<script type="text/javascript" src="./nowdata_components.min.js.다운로드"></script>
+
+
+	<div id="ui-datepicker-div" class="ui-datepicker ui-widget ui-widget-content ui-helper-clearfix ui-corner-all"></div><div role="log" aria-live="assertive" aria-relevant="additions" class="ui-helper-hidden-accessible"><div style="display: none;">Date has the format yyyy-mm</div><div>Date has the format yyyy-mm</div></div><div role="log" aria-live="assertive" aria-relevant="additions" class="ui-helper-hidden-accessible"></div><div class="ui-dialog ui-widget ui-widget-content ui-corner-all ui-front ui-draggable ui-resizable" tabindex="-1" role="dialog" aria-describedby="results_area" aria-labelledby="ui-id-1" style="display: none; position: absolute;"><div class="ui-dialog-titlebar ui-widget-header ui-corner-all ui-helper-clearfix ui-draggable-handle"><span id="ui-id-1" class="ui-dialog-title" style="width: 67%;">NOWData - NOAA Online Weather Data</span><button class="ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only" role="button"><span class="ui-button-text">Enlarge results</span></button><button id="printButton" class="ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only" role="button"><span class="ui-button-text">Print</span></button><button type="button" class="ui-button ui-widget ui-state-default ui-corner-all ui-button-icon-only ui-dialog-titlebar-close" role="button" title="Close"><span class="ui-button-icon-primary ui-icon ui-icon-closethick"></span><span class="ui-button-text">Close</span></button></div><div id="results_area" class="ui-dialog-content ui-widget-content"></div><div class="ui-resizable-handle ui-resizable-n" style="z-index: 90;"></div><div class="ui-resizable-handle ui-resizable-e" style="z-index: 90;"></div><div class="ui-resizable-handle ui-resizable-s" style="z-index: 90;"></div><div class="ui-resizable-handle ui-resizable-w" style="z-index: 90;"></div><div class="ui-resizable-handle ui-resizable-se ui-icon ui-icon-gripsmall-diagonal-se" style="z-index: 90;"></div><div class="ui-resizable-handle ui-resizable-sw" style="z-index: 90;"></div><div class="ui-resizable-handle ui-resizable-ne" style="z-index: 90;"></div><div class="ui-resizable-handle ui-resizable-nw" style="z-index: 90;"></div></div><div class="ui-dialog ui-widget ui-widget-content ui-corner-all ui-front ui-draggable ui-resizable" tabindex="-1" role="dialog" aria-describedby="helpDialog" aria-labelledby="ui-id-2" style="display: none; position: absolute;"><div class="ui-dialog-titlebar ui-widget-header ui-corner-all ui-helper-clearfix ui-draggable-handle"><span id="ui-id-2" class="ui-dialog-title">Help</span><button type="button" class="ui-button ui-widget ui-state-default ui-corner-all ui-button-icon-only ui-dialog-titlebar-close" role="button" title="Close"><span class="ui-button-icon-primary ui-icon ui-icon-closethick"></span><span class="ui-button-text">Close</span></button></div><div id="helpDialog" class="ui-widget ui-dialog-content ui-widget-content"></div><div class="ui-resizable-handle ui-resizable-n" style="z-index: 90;"></div><div class="ui-resizable-handle ui-resizable-e" style="z-index: 90;"></div><div class="ui-resizable-handle ui-resizable-s" style="z-index: 90;"></div><div class="ui-resizable-handle ui-resizable-w" style="z-index: 90;"></div><div class="ui-resizable-handle ui-resizable-se ui-icon ui-icon-gripsmall-diagonal-se" style="z-index: 90;"></div><div class="ui-resizable-handle ui-resizable-sw" style="z-index: 90;"></div><div class="ui-resizable-handle ui-resizable-ne" style="z-index: 90;"></div><div class="ui-resizable-handle ui-resizable-nw" style="z-index: 90;"></div></div></body></html>

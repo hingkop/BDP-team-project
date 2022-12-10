@@ -1,0 +1,315 @@
+var ARGS = window.location.search.toLowerCase().replace('?','');
+if (ARGS) {
+  console.log('Parameters detected')
+  var args = ARGS.split('&');
+  var wfo = '';
+  var WFO = '';
+  for (i = 0; i < args.length; i++) {
+    var chunk = args[i].split('=');
+    if (chunk[0]=='wfo' && chunk[1].length=='3') {
+      wfo = chunk[1];
+      WFO = wfo.toUpperCase();
+    } else if (chunk[0]=='fbclid') {
+      console.log('Facebook reference')
+    } else {
+      alert('Something is wrong!\n Valid arguments are "wfo"\n followed by a valid 3 letter identifier\n Example:\nhttps://www.weather.gov/wrh/climate?wfo=slc');
+      window.location.href = 'https://www.weather.gov/wrh/climate'; 
+    }
+  }
+}
+
+$(function() {
+  var myTabs = tabs({
+    el: '#tabs3197',
+    tabNavigationLinks: '.c-tabs-nav__link',
+    tabContentContainers: '.c-tab'
+  });
+  myTabs.init();
+  localize();
+  makeMenu('CLI');
+  makeResourceTab('RESOURCES');
+  makeResourceTab('PREDICTION');
+  makeResourceTab('VARIABILITY');
+  $('.subMenuNav').html('');
+  $('ul#subMenuNav li').css({ 'margin-right': '25px' });
+  $('.breadcrumb').css({ 'margin-bottom': '0px' });
+  $('#myfcst-widget').hide();
+  $('.full-width-border').css('border-top', 'white');
+  $('.partial-width-borderbottom').css('border-bottom', 'white');
+  $('.five-sixth-first').css({'width' : '100%', 'padding-right': '0px', 'padding-left': '0px'});
+  $('#sidebar.one-sixth-first').hide();
+  $('#forecast-lookup').appendTo('div#fcst');
+  $('.footer').css({'display': 'none'});
+  var isMobile = navigator.userAgent.match(/(Android)|(webOS)|(iPhone)|(iPod)|(BlackBerry)|(IEMobile)|(Opera Mini)/i);
+  if (!isMobile) {
+    $("#textArea").css("font-size", "14px");
+  }
+})
+
+function localize() {
+  if (wfo) {
+    $.getJSON('https://api.weather.gov/offices/'+WFO)
+    // Customize "look and feel of page to be WFO centric (breadcrumbs, address, social media links, etc)
+    .success(function(officeInfo) {
+      var LOC_NAME = officeInfo.name;
+      var LOC_STREET = officeInfo.address.streetAddress;
+      var LOCALITY = officeInfo.address.addressLocality;
+      var STATE = officeInfo.address.addressRegion;
+      var ZIP = officeInfo.address.postalCode;
+      $('.location-breadcrumb').html('<a href="https://www.weather.gov">Weather.gov</a> &gt; <a href="/'+wfo+'">'+LOC_NAME+'</a> &gt; Climate');
+      $('.sitename-name').html(LOC_NAME);
+      $('.sitename-class').html('Weather Forecast Office');
+      $('.one-half-first').html('<p><a href="http://www.commerce.gov">US Dept of Commerce</a><br /><a href="http://www.noaa.gov">National Oceanic and Atmospheric Administration</a><br /><a href="https://www.weather.gov" >National Weather Service</a><br />'+LOC_NAME+'<br />'+LOC_STREET+'<br />'+LOCALITY+', '+STATE+' '+ZIP+'<br/><br><a href="https://www.weather.gov/Contact">Comments? Questions? Please Contact Us</a>');
+    })
+    .fail (function( jqxhr, textStatus, error ) {
+      $('.location-breadcrumb').html('<a href="https://www.weather.gov">Weather.gov</a> &gt; <a href="/'+wfo+'">'+WFO+'</a> &gt; Climate');
+      $('.sitename-name').html(WFO);
+      $('.sitename-class').html('Weather Forecast Office');
+      $('.one-half-first').html('<p><a href="http://www.commerce.gov">US Dept of Commerce</a><br /><a href="http://www.noaa.gov">National Oceanic and Atmospheric Administration</a><br /><a href="https://www.weather.gov" >National Weather Service</a><br />1325 East West Highway<br />Silver Spring, MD 20910<br/><br><a href="https://www.weather.gov/Contact">Comments? Questions? Please Contact Us</a>');
+    });
+    $.getJSON('/source/'+wfo+'/newClimate/newClimate.json')
+    // If office has social media handles configured, show social media icons, otherwise, hide the area where social media icons are.
+    .success(function(social) {
+      if(social.social) {
+        var tw = social.social.Twitter;
+        var fb = social.social.Facebook;
+        var yt = social.social.Youtube;
+        $('.full-width-first').html('<div class="full-width-first communication-links"><div class ="one-sixth-first divs"><div class="myforecast-current"><a style="text-decoration:none;" href="https://www.twitter.com/'+tw+'" target="_blank"><img src="/css/images/twitter.png" width="16" alt="Follow us on Twitter" height="16" />&nbsp;&nbsp;Follow us on Twitter</a></div></div><div class ="one-sixth-first divs"><div class="myforecast-current"><a style="text-decoration:none;" href="https://www.facebook.com/'+fb+'" target="_blank"><img src="/css/images/fb.png" width="16" height="16" alt="Follow us on Facebook" />&nbsp;&nbsp;Follow us on Facebook</a></div></div><div class ="one-sixth-first divs"><div class="myforecast-current"><a style="text-decoration:none;" href="https://www.youtube.com/user/'+yt+'" target="_blank"><img src="/css/images/youtube_play.png" alt="Follow us on YouTube" />&nbsp;&nbsp;Follow us on YouTube</a></div></div><div class ="one-half-last nopad"><span class="txt-rt myforecast-current"><div class="myforecast-current"><a href="/rss_page.php?site_name='+wfo+'" target="_blank" style="text-decoration:none;font-size:11px;"><img src="/css/images/rss.png" width="16" height="16" alt="'+WFO+' RSS Feed" />&nbsp;&nbsp;'+WFO+' RSS Feed</a></div></span></div>');
+      } else { 
+       $('.full-width-first').css({'display': 'none'});
+      }
+    })
+    .fail (function( jqxhr, textStatus, error ) {
+      $('.full-width-first').css({'display': 'none'});
+    })
+  } else {
+  // If "WFO" is not defined, this myst be the map, and all references/contact info should be to NWSHQ
+    $('.location-breadcrumb').html('<a href="https://www.weather.gov">Weather.gov</a> &gt; Climate');
+    $('.sitename-name').html('National Weather Service');
+    $('.sitename-class').html('National Headquarters');
+    $('.one-half-first').html('<p><a href="http://www.commerce.gov">US Dept of Commerce</a><br /><a href="http://www.noaa.gov">National Oceanic and Atmospheric Administration</a><br /><a href="https://www.weather.gov" >National Weather Service</a><br />1325 East West Highway<br />Silver Spring, MD 20910<br/><br><a href="https://www.weather.gov/Contact">Comments? Questions? Please Contact Us</a>');
+    $('.full-width-first').css({'display': 'none'});
+  }   
+}
+
+function makeMenu(product) {
+  if (wfo) {
+    $('#MAP').hide();
+    $('#NCEI').hide();
+    $('#OFFICE').show();
+    $('#OLDER').html('<h2>Products viewable from this page have been issued within the last 7 days</h2>');
+    $('#versions').html('');
+    $('#textArea').html('');
+    var product = product.toLowerCase();
+    var PRODUCT = product.toUpperCase();
+    var Menubar='';
+    $.getJSON('/source/'+wfo+'/newClimate/newClimate.json')
+    .success(function(LOCLIST) {
+      checkCodes(LOCLIST)
+      makeLocalTab(wfo);
+      var menu = product+'_sites';
+      var listLength = LOCLIST[menu].length
+      for (i=0; i< listLength; i++) {
+        var NAME = LOCLIST[menu][i].city_state;
+        var LOC  = LOCLIST[menu][i].loc;
+        Menubar+='<option value="'+LOC+'">'+NAME+'</option>'; 
+      }
+      $('#ButtonBar').html('<select size="8" id="availableLocs" style="width:360px;" onchange="push(\''+PRODUCT+'\',\''+WFO+'\' )"><option value="" selected="selected">'+Menubar+'</select>');
+      // offset "wfo" variable for specific cases
+      var ACIS_LOC = wfo;
+      if (wfo == 'gum') {
+         ACIS_LOC = 'guam';
+      } else if (wfo == 'hfo') {
+        ACIS_LOC = 'hnl'
+      } else if (wfo == 'ppg') {
+        ACIS_LOC = 'samoa'
+      } else if (wfo == 'afc') {
+        ACIS_LOC = 'pafc'
+      } else if (wfo == 'afg') {
+        ACIS_LOC = 'pafg'
+      } else if (wfo == 'ajk') {
+        ACIS_LOC = 'pajk'
+      } 
+      $('#ACIS').html('<p><iframe frameborder="0" height="575" marginheight="0" marginwidth="0" name="routine" scrolling="auto" src="https://nowdata.rcc-acis.org/'+ACIS_LOC+'/" width="590"></iframe></p>');
+    })
+    .fail (function( jqxhr, textStatus, error ) {
+      var err = textStatus + ', ' + error;
+      console.log( 'Request Failed: ' + wfo +', '+ err );
+      $('#ACIS').html('<p>This site has not been configured.');
+      $('#ButtonBar').html('<p>This site has not been configured.');
+      $('#LOCAL_LINKS').html('<p>This site has not been configured.');
+    });
+  } else {
+    $('#MAP').show();
+    $('#OFFICE').hide();
+    $('.location-breadcrumb').html('<a href="https://www.weather.gov">Weather.gov</a> &gt; Climate');
+    $('.sitename-name').html('National Weather Service');
+    $('.sitename-class').html('National Headquarters');
+    $('.one-half-first').html('<p><a href="http://www.commerce.gov">US Dept of Commerce</a><br /><a href="http://www.noaa.gov">National Oceanic and Atmospheric Administration</a><br /><a href="https://www.weather.gov" >National Weather Service</a><br />1325 East West Highway<br />Silver Spring, MD 20910<br/><br><a href="https://www.weather.gov/Contact">Comments? Questions? Please Contact Us</a>');
+    // Diagnostics
+    // Run only if url is w2.weather.gov/wrh/climate
+    var URL=window.location.href;
+    if (URL.includes('w2')) {
+      checkRegion('AR');
+      checkRegion('ER');
+      checkRegion('CR');
+      checkRegion('PR');
+      checkRegion('SR');
+      checkRegion('WR');
+    }
+  }
+  describe(PRODUCT)
+}
+
+function push(PRODUCT,WFO){
+  if (PRODUCT){ 
+    var LOC = $('#availableLocs').val();
+    if (LOC != '') {
+      getProduct(LOC,PRODUCT,WFO);
+      $('#NCEI').show();
+      $('#OLDER').html('<h2>Products viewable from this page have been issued within the last 7 days</h2>');
+    } else {
+      makeMenu(PRODUCT);
+    }
+  }
+}
+
+function checkCodes(DATA) {
+  codes=["cli","cf6","clm","rtp","rer","cla","cls","clq"];
+  for (i=0; i<codes.length; i++) {
+    var menu = codes[i]+'_sites';
+    if (DATA[menu]) {
+      if (DATA[menu].length == 0) {
+        $('#'+codes[i]).hide()
+      }
+    } else {
+      $('#'+codes[i]).hide()
+    }
+  }
+}
+
+function makeLocalTab(wfo) {
+  $.getJSON('/source/'+wfo+'/newClimate/links.json')
+  .success(function(LINKS) {
+    var pageLinks = '';
+    for (i=0; i<LINKS.LOCAL_DATA.length; i++) {
+      var header = LINKS.LOCAL_DATA[i].header;
+      pageLinks+='<h2>'+header+'</h2>';
+      var subLinks = '';
+      for (j=0; j<LINKS.LOCAL_DATA[i].links.length; j++) {
+        var title = LINKS.LOCAL_DATA[i].links[j].title;     
+        var url   = LINKS.LOCAL_DATA[i].links[j].link;     
+        subLinks+='<li><a href="'+url+'">'+title+'</a></li>';
+      }
+      pageLinks+='<ul>'+subLinks+'</ul>';
+    }
+    $('#LOCAL_LINKS').html(pageLinks);
+  }) 
+  .fail (function( jqxhr, textStatus, error ) {
+    var err = textStatus + ', ' + error;
+    console.log( 'Request Failed: ' + wfo +', '+ err );
+    $('#LOCAL_LINKS').html('<p>This site has not been configured.');
+  });
+}
+
+function makeResourceTab(NAME) {
+  $.getJSON('/source/wrh/newClimate/'+NAME+'.json', function (LINKS){
+    var pageLinks = '';
+    for (i=0; i<LINKS[NAME].length; i++) {
+      var header = LINKS[NAME][i].header;
+      pageLinks+='<h2>'+header+'</h2>';
+      var subLinks = '';
+      for (j=0; j<LINKS[NAME][i].links.length; j++) {
+        var title = LINKS[NAME][i].links[j].title;     
+        var url   = LINKS[NAME][i].links[j].link;     
+        subLinks+='<li><a href="'+url+'">'+title+'</a></li>';
+      }
+      pageLinks+='<ul>'+subLinks+'</ul>';
+    }
+    $('#'+NAME).html(pageLinks);
+  })
+}
+
+function describe(PRODUCT) {
+  var description = '';
+  if (PRODUCT == 'CF6') {
+    description = '<strong>PRELIMINARY MONTHLY DATA</strong> - updated frequently: Daily weather statistics for the month, including temperatures, precipitation, degree days, wind and sky cover.  In addition, monthly statistics such as average temperatures and departures from normal, degree days, and rainfall are also included.';
+    //description = '<strong>PRELIMINARY MONTHLY DATA</strong> - updated frequently: Daily weather statistics for the month, including temperatures, precipitation, degree days, wind and sky cover.  In addition, monthly statistics such as average temperatures and departures from normal, degree days, and rainfall are also included.  This product is available for up to 5 years.';
+  } else if (PRODUCT == 'CLA') {
+    description = '<strong>ANNUAL CLIMATE REPORT</strong> - issued annually: Detailed annual weather statistics, including temperature, precipitation, degree days, wind, humidity, sunrise/sunset, and record temperature data for a year period. Precipitation data includes both calendar year and water year totals, percent of normal values, and comparisons to normal.';
+    //description = '<strong>ANNUAL CLIMATE REPORT</strong> - issued annually: Detailed annual weather statistics, including temperature, precipitation, degree days, wind, humidity, sunrise/sunset, and record temperature data for a year period. Precipitation data includes both calendar year and water year totals, percent of normal values, and comparisons to normal.   This product is available for up to 5 years.';
+  } else if (PRODUCT == 'CLI') {
+    description = '<strong>DAILY CLIMATE REPORT</strong> - issued daily: Detailed daily weather statistics (usually for yesterday), including temperature, precipitation, degree days, wind, humidity, sunrise/sunset, and record temperature data for the following day.  Precipitation data includes both calendar year and water year totals, percent of normal values, and comparisons to normal.';
+    //description = '<strong>DAILY CLIMATE REPORT</strong> - issued daily: Detailed daily weather statistics (usually for yesterday), including temperature, precipitation, degree days, wind, humidity, sunrise/sunset, and record temperature data for the following day.  Precipitation data includes both calendar year and water year totals, percent of normal values, and comparisons to normal.  This product is available for up to 2 months.';
+  } else if (PRODUCT == 'CLM') {
+    description = '<strong>MONTHLY WEATHER SUMMARY</strong> - issued once per month: Monthly weather statistics, including temperature, precipitation, degree days, pressure, wind and sky cover.  Normal values and departures from normal are also included.  *NOTE more in-depth record data may also be available under the "Local Data/Records" tab';
+    //description = '<strong>MONTHLY WEATHER SUMMARY</strong> - issued once per month: Monthly weather statistics, including temperature, precipitation, degree days, pressure, wind and sky cover.  Normal values and departures from normal are also included.  *NOTE more in-depth record data may also be available under the tab "Local Data/Records."  This product is available for up to 1 year.';
+  } else if (PRODUCT == 'CLQ') {
+    description = '<strong>QUARTERLY CLIMATE REPORT - issued seasonally: Detailed quarterly weather statistics, including temperature, precipitation, degree days, wind, humidity, sunrise/sunset, and record temperature data for a season. Precipitation data includes both calendar year and water year totals, percent of normal values, and comparisons to normal.';
+    //description = '<strong>QUARTERLY CLIMATE REPORT - issued seasonally: Detailed quarterly weather statistics, including temperature, precipitation, degree days, wind, humidity, sunrise/sunset, and record temperature data for a season. Precipitation data includes both calendar year and water year totals, percent of normal values, and comparisons to normal.   This product is available for up to 5 years.';
+  } else if (PRODUCT == 'CLS') {
+    description = '<strong>SEASONAL CLIMATE REPORT - issued seasonally: Detailed seasonal weather statistics, including temperature, precipitation, degree days, wind, humidity, sunrise/sunset, and record temperature data for a season. Precipitation data includes both calendar year and water year totals, percent of normal values, and comparisons to normal.';
+    //description = '<strong>SEASONAL CLIMATE REPORT - issued seasonally: Detailed seasonal weather statistics, including temperature, precipitation, degree days, wind, humidity, sunrise/sunset, and record temperature data for a season. Precipitation data includes both calendar year and water year totals, percent of normal values, and comparisons to normal.   This product is available for up to 5 years.';
+  } else if (PRODUCT == 'RER') {
+    description = '<strong>RECORD EVENT REPORT</strong> - issued as needed: Information on weather-related records that have been matched or broken.  Examples include record temperatures, or number of consecutive days of measurable rainfall.  *NOTE more in-depth record data may also be available under the "Local Data/Records tab."';
+    //description = '<strong>RECORD EVENT REPORT</strong> - issued as needed: Information on weather-related records that have been matched or broken.  Examples include record temperatures, or number of consecutive days of measurable rainfall.  *NOTE more in-depth record data may also be available under the tab "Local Data/Records."   This product is available for up to 6 months.';
+  } else if (PRODUCT == 'RTP') {
+    description = '<strong>REGIONAL SUMMARY</strong> - issued multiple times per day: Local high and low temperature and precipitation information from sites like cooperative weather observers and airports.<br><strong>STATE SUMMARY</strong> - issued multiple times per day: Statewide high and low temperature and precipitation information from sites like cooperative weather observers and airports.';
+    //description = '<strong>REGIONAL SUMMARY</strong> - issued multiple times per day: Local high and low temperature and precipitation information from sites like cooperative weather observers and airports.  This product is available for up to 1 year.<br><strong>STATE SUMMARY</strong> - issued multiple times per day: Statewide high and low temperature and precipitation information from sites like cooperative weather observers and airports.  This product is available for up to 1 month.';
+  }
+  $('#versions').html(description);
+}
+
+// Diagnostics
+// Use console filtering for "No configuration, 'XX'_office, sites, No Links", or combinations of those 
+function checkRegion(REGION) {
+  if (REGION == 'WR') {
+    var Offices=['SLC','BOI','PIH','BYZ','TFX','GGW','MSO','OTX','SEW','PQR','PDT','MFR','EKA','STO','MTR','HNX','LOX','SGX','PSR','TWC','FGZ','LKN','VEF','REV'];
+  } else if (REGION == 'SR') {
+    var Offices=['ABQ','AMA','EWX','BMX','BRO','CRP','FWD','EPZ','HGX','HUN','JAN','JAX','KEY','LCH','LZK','LUB','MLB','MEG','MFL','MAF','MOB','MRX','OHX','LIX','FFC','OUN','SJT','SJU','SHV','TAE','TBW','TSA'];
+  } else if (REGION == 'ER') {
+    var Offices=['ALY','LWX','BGM','RNK','BOX','BUF','BTV','CAR','CHS','RLX','CLE','CAE','GSP','MHX','OKX','PHI','PBZ','GYX','RAH','CTP','AKQ','ILM','ILN'];
+  } else if (REGION == 'CR') {
+    var Offices=['BOU','GJT','PUB','LOT','ILX','IND','IWX','DVN','DMX','DDC','GLD','TOP','ICT','JKL','LMK','PAH','DTX','APX','GRR','MQT','DLH','MPX','EAX','SGF','LSX','GID','LBF','OAX','BIS','FGF','ABR','UNR','FSD','GRB','ARX','MKX','CYS','RIW'];
+  } else if (REGION == 'AR') {
+    var Offices=['AFC','AFG','AJK'];
+  } else if (REGION == 'PR') {
+    var Offices=['GUM','HFO','PPG'];
+  }
+  for (i=0; i<Offices.length; i++) {
+    var office=Offices[i].toLowerCase()
+    checkJSON(office,REGION);
+  }
+}
+
+function checkJSON(office,REGION) {
+  $.getJSON('/source/'+office+'/newClimate/newClimate.json')
+  .success(function(DATA) {
+    checkArrays(DATA,office,REGION);
+  })
+  .fail (function( jqxhr, textStatus, error ) {
+    console.log( 'No configuration for '+REGION+'_office   : '+ office );
+  });
+  $.getJSON('/source/'+office+'/newClimate/links.json')
+  .success(function(LINKS) {
+    console.log('Link file found for '+REGION+'_office:         ', office );
+  })
+  .fail (function( jqxhr, textStatus, error ) {
+    console.log('No link file found for  '+REGION+'_office:     ', office );
+  });
+}  
+
+function checkArrays(DATA,WFO,REGION) {
+  codes=["cli","cf6","clm","rtp","rer","cla","cls","clq"];
+  var configured=0;
+  var missing='';
+  for (i=0; i<codes.length; i++) {
+    var menu = codes[i]+'_sites';
+    if (DATA[menu]) {
+      configured++;
+    } else {
+      missing += menu+',';
+    }
+  }
+  console.log( 'Configuration found for '+REGION+'_office: '+ WFO +'. '+ configured +' of 8 arrays installed.  Missing: '+missing  );
+}

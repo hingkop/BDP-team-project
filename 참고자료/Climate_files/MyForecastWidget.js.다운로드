@@ -1,0 +1,404 @@
+$(document).ready(function() {
+    bindSearchFormHandlers();
+    initForecast();
+});
+
+function initForecast(callback)
+{
+    var latlon = null;
+    var lat = null;
+    var lon = null;
+    var zip = null;
+    if ($.cookie('myForecast') !== null) {
+        latlon = $.cookie('myForecast').split(",");
+        lat = latlon[0];
+        lon = latlon[1];
+        if (typeof latlon[2] !== 'undefined') {
+            zip = latlon[2];
+        }
+    }
+    if ($.cookie("myForecastsess")) {
+        latlon = $.cookie('myForecastsess').split(",");
+        lat = latlon[0];
+        lon = latlon[1];
+        if (typeof latlon[2] !== 'undefined') {
+            zip = latlon[2];
+        }
+    }
+    if (latlon !== null) {
+        hideMyfcstForm();
+        showMyfcstLoading();
+        requestWidget(lat, lon, zip);
+
+    } else {
+        showMyfcstForm();
+    }
+}
+
+function bindMultiHandlers(locations) {
+    $("#myfcst .myfcst-multi").on('click', function() {
+        $("#myfcst").find("#myfcst-location-input").val(oidArray[$(this).attr('oid')].geometry.location).attr('value', oidArray[$(this).attr('oid')].geometry.location);
+        hideMyfcstMulti();
+        getForecast();
+
+        return false;
+    });
+}
+
+function bindForecastHandlers() {
+    $("#myfcst-change-location").on('click', function() {
+        changeMyfcstLocation();
+    });
+}
+
+function bindSearchFormHandlers()
+{
+    /* attach a submit handler to the form */
+    $("#myfcst-form").on('submit', function(e) {
+        e.preventDefault();
+        getForecast();
+        return false;
+    });
+
+
+    $("#myfcst-location-input").on('focusin', function() {
+        if ($(this).val() === 'City, ST') {
+            $(this).val('');
+        }
+
+        return true;
+    });
+
+
+    $("#myfcst-location-input").on('focusout', function() {
+        if ($(this).val() === '') {
+            $(this).val('City, ST');
+        }
+        return true;
+    });
+}
+
+function changeMyfcstLocation()
+{
+    $.removeCookie("myForecast", {
+        path: '/'
+    });
+    $.removeCookie("myForecastsess", {
+        path: '/'
+    });
+    $("#myfcst-error").html("");
+    hideMyfcstFcst();
+    hideMyfcstMulti();
+    hideMyfcstLoading();
+    showMyfcstForm();
+}
+
+function loadSingleLocation(location) {
+    var overrides = {
+        '08736, Manasquan, New Jersey, USA': {x: -74.037, y: 40.1128},
+        '32899, Orlando, Florida, USA': {x: -80.6774, y: 28.6143},
+        '97003, Beaverton, Oregon, USA': {x: -122.8752489, y: 45.5050916},
+        '99734, Prudhoe Bay, Alaska, USA': {x:-148.3372, y: 70.2552},
+
+        'Guam, Oceania': {x: 144.74, y: 13.46},
+        'Andover, Maine, United States': {x: -70.7525, y: 44.634167},
+        'Bear Creek, Pennsylvania, United States': {x: -75.772809, y: 41.204074},
+        'Bear Creek Village, Pennsylvania, United States': {x: -75.772809, y: 41.204074},
+        'New York City, New York, United States': {x: -74.0059, y: 40.7142},
+        'Pinnacles National Monument, San Benito County,California, United States': {x: -121.147278, y: 36.47075},
+        'Pinnacles National Park, CA-146, Paicines, California': {x: -121.147278, y: 36.47075},
+        'Welcome, Maryland, United States': {x: -77.081212, y: 38.4692469}
+    };
+
+    if (overrides[location.text]) {
+        processLocation(overrides[location.text]);
+    } else {
+        request = $.ajax({
+            url: '//geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/find',
+            data: {
+                text: location.text,
+                magicKey: location.magicKey,
+                f: 'json'
+            },
+            jsonp: 'callback',
+            dataType: 'jsonp'
+        }).done(function (data) {
+            if (data && data.locations && data.locations.length > 0) {
+                processLocation(data.locations[0].feature.geometry);
+            } else {
+                showMyfcstError("Location details unavailable. Please try again.");
+            }
+        });
+    }
+}
+
+function processLocation(geom) {
+    var roundToPlaces = function (num, decimals) {
+        var n = Math.pow(10, decimals);
+        return Math.round( (n * num).toFixed(decimals) )  / n;
+    }
+
+    var lat = roundToPlaces(geom.y, 2);
+    var lon = roundToPlaces(geom.x, 2);
+    var zip = $("#myfcst-location-input").val();
+
+    var patt1 = new RegExp("^[0-9]{5}$");
+    if (patt1.test(zip) === false) {
+        zip = null;
+    }
+
+    requestWidget(lat, lon, zip);
+};
+
+function loadMultipleLocations(locations) {
+    var titleSpan = $('<span />');
+    titleSpan.attr('id', 'myfcst-title');
+    titleSpan.html('More than one location matched your submission');
+
+    var line = $('<div />');
+    line.addClass('myfcst-hr');
+
+    var listUl = $('<ul />');
+    listUl.css('list-style', 'inherit');
+
+    var cancelMulti = $('<div />');
+    cancelMulti.attr('id', 'cancelMulti');
+    cancelMulti.html('Cancel');
+    cancelMulti.on('click', function() {
+        changeMyfcstLocation();
+    });
+
+    $.each(locations, function(i, loc) {
+        var choiceLi = $('<li />');
+        var choice = $('<span />');
+        choice.addClass('myfcst-multi');
+        choice.html(loc.text);
+        choice.on('click', function() {
+            hideMyfcstMulti();
+            showMyfcstLoading();
+            loadSingleLocation(loc);
+        });
+        choiceLi.append(choice);
+        listUl.append(choiceLi);
+    });
+    $("#myfcst-multi-result").html("");
+    $("#myfcst-multi-result").append(titleSpan);
+    $("#myfcst-multi-result").append(line);
+    $("#myfcst-multi-result").append(listUl);
+    $("#myfcst-multi-result").append(cancelMulti);
+    showMyfcstMulti();
+    hideMyfcstLoading();
+    hideMyfcstForm();
+}
+
+function getForecast() {
+    hideMyfcstForm();
+    showMyfcstLoading();
+    var searchQuery = $("#myfcst-location-input").val();
+
+    var categories = [
+        'Land Features',
+        'Bay','Channel','Cove','Dam','Delta','Gulf','Lagoon','Lake','Ocean','Reef','Reservoir','Sea','Sound','Strait','Waterfall','Wharf', // Water Features
+        'Amusement Park', 'Historical Monument', 'Landmark', 'Tourist Attraction', 'Zoo', // POI/Arts and Entertainment
+        'College', // POI/Education
+        'Beach', 'Campground', 'Golf Course', 'Harbor', 'Nature Reserve', 'Other Parks and Outdoors', 'Park', 'Racetrack',
+            'Scenic Overlook', 'Ski Resort', 'Sports Center', 'Sports Field', 'Wildlife Reserve', // POI/Parks and Outdoors
+        'Airport', 'Ferry', 'Marina', 'Pier', 'Port', 'Resort', // POI/Travel
+        'Postal', 'Populated Place'
+    ],
+    cats = categories.join(',');
+
+    request = $.ajax({
+        url: '//geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/suggest',
+        timeout: 10000,
+        data: {
+            f: 'json',
+            countryCode: 'USA,PRI,VIR,GUM,ASM',
+            category: cats,
+            maxSuggestions: 5,
+            text: searchQuery
+        },
+        jsonp: 'callback',
+        dataType: 'jsonp'
+    }).done(function(data, textStatus, status) {
+        if (textStatus === "success" && data && data.suggestions) {
+            var location;
+            if (data.suggestions.length > 0) {
+                var loadedNames = [];
+                var loadedLocations = [];
+
+                for (var i = 0; i < data.suggestions.length; i++) {
+                    location = data.suggestions[i];
+
+                    if(jQuery.inArray(location.text, loadedNames) === -1){
+                        loadedNames.push(location.text);
+                        loadedLocations.push(location);
+                    }
+                }
+                if (loadedNames.length === 1) {
+                    loadSingleLocation(loadedLocations[0]);
+                } else {
+                    loadMultipleLocations(loadedLocations);
+                }
+            } else {
+                showMyfcstError("Location not found. Please try again.");
+            }
+        } else {
+            showMyfcstError("Service response failed. Please try again.");
+        }
+    }).fail(function() {
+        showMyfcstError("Cannot contact service. Please try again.");
+    }).always(function() {
+        //do nothing
+    });
+}
+
+function requestWidget(lat, lon, zip)
+{
+    var myfcstRemember = ($('#myfcst-remember').is(':checked')) ? true : false;
+    var data = '&lat=' + lat + '&lon=' + lon;
+    var cookieVal = lat + "," + lon;
+    if (zip !== null) {
+        data = data + '&zip=' + zip;
+        cookieVal = cookieVal + ',' + zip;
+    }
+
+    $.ajax({
+        error: function () {
+            showMyfcstError('Sorry, no forecast found. Please try again.');
+        },
+        success: function (data) {
+            hideMyfcstLoading();
+            console.log(data);
+            if (myfcstRemember === true) {
+                $.cookie('myForecast', cookieVal, {expires: 30, path: '/'});
+            }
+            $.cookie('myForecastess', cookieVal, {path: '/'});
+            showMyfcstFcst();
+            $('#myfcst-form').hide();
+
+            var html = $('<div></div>');
+            // header
+            $(html).append($('<span></span>').attr('id', 'myfcst-title').text('MY FORECAST'));
+
+            // location
+            var location = 'N/A';
+            if (data.location !== undefined && data.location.areaDescription !== undefined) {
+                location = data.location.areaDescription;
+            } else if (data.currentobservation !== undefined && data.currentobservation.name !== undefined) {
+                location = data.currentobservation.name;
+            }
+            $(html).append($('<p></p>').addClass('myfcst-location').text(location));
+
+            // icon
+            var current = $('<div></div>').text('N/A');
+            if (data.currentobservation !== undefined && data.currentobservation.Weatherimage !== undefined) {
+                current = $('<img>').attr('src', '//forecast.weather.gov/newimages/medium/' + data.currentobservation.Weatherimage);
+            }
+            $(html).append($(current).attr('id', 'myfcst-current'));
+
+            // conditions
+            var conditions = 'N/A';
+            if (data.currentobservation !== undefined && data.currentobservation.Weather !== undefined) {
+                conditions = data.currentobservation.Weather;
+            }
+            $(html).append($('<p></p>').attr('id', 'myfcst-location').text(conditions));
+
+            // temperature
+            var temperature = 'N/A';
+            if (data.currentobservation !== undefined && data.currentobservation.Temp !== undefined) {
+                temperature = data.currentobservation.Temp;
+            }
+            $(html).append($('<span></span>').attr('id', 'myfcst-tempf').html(temperature+'&deg;F'));
+
+            // footer
+            // temperature celsius
+            var footer = $('<div></div>').addClass('myfcst-footer');
+            var tempc = Math.round((data.currentobservation.Temp - 32) / 1.8);
+            $(footer).append($('<span></span>').attr('id', 'myfcst-tempc').html(tempc+'&deg;C'));
+
+            // details link
+            $(footer).append($('<a></a>').attr('id', 'myfcst-details')
+                .attr('href', '//forecast.weather.gov/MapClick.php?textField1='+lat+'&textField2='+lon)
+                .attr('target', '_blank').text('Get Detailed info'));
+            $(html).append(footer);
+
+            // hr
+            $(html).append($('<div></div>').addClass('myfcst-hr'));
+
+            // extended forecast
+            for (var i = 0; i < 2; i++) {
+                if (i > 0) $(html).append($('<br>'));
+                var later = $('<div></div>').addClass('myfcst-later');
+                $(later).append($('<p></p>').addClass('myfcst-location').text(data.time.startPeriodName[i] || 'N/A'));
+                $(later).append($('<img>').attr('src', data.data.iconLink[i]));
+                $(later).append($('<p></p>').addClass('myfcst-forecast').text(data.data.weather[i] || 'N/A'));
+                $(later).append(
+                    $('<span></span>').attr('id', 'myfcst-'+data.time.tempLabel[i].toLowerCase())
+                        .html((data.time.tempLabel[i] || 'N/A')+': '+(data.data.temperature[i] || 'N/A')+'&deg;F')
+                );
+                $(html).append(later);
+            }
+
+            // ... second footer
+            $(html).append($('<div></div>').addClass('myfcst-hr'));
+            $(html).append($('<div></div>').addClass('myfcst-footer').html(
+                $('<a></a>').attr('id', 'myfcst-change-location').attr('href', '#').text('change location')
+            ));
+
+            $('#myfcst-fcst').html(html);
+            bindForecastHandlers();
+        },
+        url: '//forecast.weather.gov/MapClick.php?&lat=' + lat + '&lon=' + lon + '&FcstType=json'
+    });
+}
+
+
+function showMyfcstForm()
+{
+    $("#myfcst-location-input").val("City, ST");
+    $("#myfcst-form").css("display", "block");
+}
+
+function hideMyfcstForm()
+{
+    $("#myfcst-form").css("display", "none");
+}
+
+function showMyfcstFcst()
+{
+    $("#myfcst-fcst").css("display", "block");
+}
+
+function hideMyfcstFcst()
+{
+    $("#myfcst-fcst").html("");
+    $("#myfcst-fcst").css("display", "none");
+}
+
+function showMyfcstMulti()
+{
+    $("#myfcst-multi-result").css("display", "block");
+}
+
+function hideMyfcstMulti()
+{
+    $("#myfcst-multi-result").css("display", "none");
+}
+
+function showMyfcstLoading()
+{
+    $("#myfcst-loading").css("display", "block");
+}
+
+function hideMyfcstLoading()
+{
+    $("#myfcst-loading").css("display", "none");
+}
+ function showMyfcstError(message) {
+    $("#myfcst-error").html(message);
+    hideMyfcstLoading();
+    showMyfcstForm();
+    $.removeCookie("myForecast", {path: '/'});
+    $.removeCookie("myForecastsess", {path: '/'});
+ }

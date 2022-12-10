@@ -1,0 +1,128 @@
+function getProduct(LOC,product,WFO) {
+  var PRODUCT=product.toUpperCase();
+  document.getElementById('textArea').innerHTML ='<p align="center"><img src="/images/slc/common_images/spinner.gif">';
+  try {
+    $.getJSON('https://api.weather.gov/products/types/'+product+'/locations/'+LOC, function(text) {
+      var numVersions = text['@graph'].length;
+      var versionSelect='';
+      var oldestVersion = numVersions - 1;
+      var dropdown = '';
+      if (PRODUCT != "CF6") {
+        if (numVersions == '0') {
+          document.getElementById('versions').innerHTML = '<hr>At this time, there are no versions of this product available.  You will be redirected to a page with more archived data, or click <a href="https://forecast.weather.gov/product.php?site='+WFO+'&product='+PRODUCT+'&issuedby='+LOC+'" target="_blank">here</a> to go there immediately, or if a new window did not open. ';
+        } else if (numVersions == '1') {
+          versionSelect = 'At this time, there are no other versions of this product';
+          document.getElementById('versions').innerHTML = versionSelect+'<a href="https://forecast.weather.gov/product.php?site='+WFO+'&product='+PRODUCT+'&issuedby='+LOC+'" target="_blank"><button>Click for access to archived data.</button></a>';
+        } else {
+//          dropdown += '<select id="VER" onchange="feed()"><option>View Previous Versions</option>';
+          for (i=0; i<numVersions; i++) {
+            var year = text['@graph'][i].issuanceTime.substr(0,4);
+            var MMDD = text['@graph'][i].issuanceTime.substr(5,5).replace('-','/');
+            var hhmm = text['@graph'][i].issuanceTime.substr(11,5);
+            var issued = MMDD+', '+year+' '+hhmm+' UTC';
+            var ISSUED = MMDD+', '+year+ '\n'+ hhmm+' UTC';
+            if (i == '0') {
+              versionSelect='<button onclick=showOlder("'+product+'","'+i+'","'+LOC+'") id="ACTIVE" title="'+ISSUED+'">Newest</button>';
+            } else if (i == oldestVersion) {
+              versionSelect+='<button onclick=showOlder("'+product+'","'+i+'","'+LOC+'") id="INACTIVE" title="'+ISSUED+'">Oldest</button>';
+            } else {
+              versionSelect+='<button onclick=showOlder("'+product+'","'+i+'","'+LOC+'","'+WFO+'") id="INACTIVE" title="'+ISSUED+'">'+i+'</button>';
+            }
+//            dropdown +='<option value="'+product+','+i+','+LOC+'">'+issued+'</option>';
+          }
+//          if (dropdown != '') {
+//            dropdown +='</select>';
+//          }
+          document.getElementById('versions').innerHTML ='There are '+numVersions+' versions of this product stored.<br> '+versionSelect+' <a href="https://forecast.weather.gov/product.php?site='+WFO+'&product='+PRODUCT+'&issuedby='+LOC+'" target="_blank"><button>Click for access to archived data.</button></a>';
+//          document.getElementById('versions').innerHTML ='There are '+numVersions+' versions of this product stored. '+dropdown+' <a href="https://forecast.weather.gov/product.php?site='+WFO+'&product='+PRODUCT+'&issuedby='+LOC+'" target="_blank"><button>Click for access to archived data.</button></a>';
+        }
+      } else {
+        document.getElementById('versions').innerHTML = '<hr>Only the current month\'s data is available at this time. <a href="https://forecast.weather.gov/product.php?site='+WFO+'&product='+PRODUCT+'&issuedby='+LOC+'" target="_blank"><button>Click for access to archived data.</button></a>';
+      }
+      try {
+        var UrlToGrab=text['@graph'][0]['@id'];
+        $.getJSON(UrlToGrab, function (product) {
+          var rawProduct=product.productText;
+          var textProduct=rawProduct.replace(/\n\n/g, '<p>');
+              textProduct=rawProduct.replace(/\n/g, '<br>');
+              textProduct=textProduct.replace(/ /g, '\u00a0');
+          document.getElementById('textArea').innerHTML =textProduct;
+        });
+      } catch (error) {
+        window.open('https://forecast.weather.gov/product.php?site='+WFO+'&product='+PRODUCT+'&issuedby='+LOC);
+        //document.getElementById('textArea').innerHTML ='There seems to be a database issue.  Try again later.';
+        document.getElementById('versions').innerHTML ='<hr>At this time, there are no versions of this product available.  You will be redirected to a page with more archived data, or click <a href="https://forecast.weather.gov/product.php?site='+WFO+'&product='+PRODUCT+'&issuedby='+LOC+'" target="_blank">here</a> to go there immediately, or if a new window did not open. ';
+      }
+    })
+  } catch (error) {
+    window.open('https://forecast.weather.gov/product.php?site='+WFO+'&product='+PRODUCT+'&issuedby='+LOC);
+    //document.getElementById('textArea').innerHTML ='There seems to be a database issue.  Try again later.';
+    document.getElementById('versions').innerHTML ='<hr>At this time, there are no versions of this product available.  You will be redirected to a page with more archived data, or click <a href="https://forecast.weather.gov/product.php?site='+WFO+'&product='+PRODUCT+'&issuedby='+LOC+'" target="_blank">here</a> to go there immediately, or if a new window did not open. ';
+  }
+}
+
+function showOlder(product,VERSION,LOC) {
+  var WFO = wfo.toUpperCase();
+  document.getElementById('textArea').innerHTML ='<p align="center"><img src="/images/slc/common_images/spinner.gif">';
+  $.getJSON('https://api.weather.gov/products/types/'+product+'/locations/'+LOC, function(text) {
+    var numVersions = text['@graph'].length;
+    var versionSelect;
+    var oldestVersion = numVersions - 1;
+    var dropdown = '';
+    if (numVersions == '1') {
+      versionSelect = 'At this time, there are no other versions of this product';
+    } else {
+//      dropdown += '<select id="VER" onchange="feed()">';
+      for (i=0; i<numVersions; i++) {
+        var year = text['@graph'][i].issuanceTime.substr(0,4);
+        var MMDD = text['@graph'][i].issuanceTime.substr(5,5).replace('-','/');
+        var hhmm = text['@graph'][i].issuanceTime.substr(11,5);
+        var issued = MMDD+', '+year+' '+hhmm+' UTC';
+        var ISSUED = MMDD+', '+year+ '\n'+ hhmm+' UTC';
+//        if (i != VERSION) {
+//          dropdown +='<option value="'+product+','+i+','+LOC+'">'+issued+'</option>';
+//        } else {
+//          dropdown +='<option selected="selected" value="'+product+','+i+','+LOC+'">'+issued+'</option>';
+//        }
+        if (i == '0') {
+          if (i == VERSION) {
+            versionSelect='<button onclick=showOlder("'+product+'","'+i+'","'+LOC+'") id="ACTIVE" title="'+ISSUED+'">Newest</button>';
+          } else {
+            versionSelect='<button onclick=showOlder("'+product+'","'+i+'","'+LOC+'") id="INACTIVE" title="'+ISSUED+'">Newest</button>';
+          }
+        } else if (i == oldestVersion) {
+          if (i == VERSION) {
+            versionSelect+='<button onclick=showOlder("'+product+'","'+i+'","'+LOC+'") id="ACTIVE" title="'+ISSUED+'">Oldest</button>';
+          } else {
+            versionSelect+='<button onclick=showOlder("'+product+'","'+i+'","'+LOC+'") id="INACTIVE" title="'+ISSUED+'">Oldest</button>';
+          }
+        } else {
+          if (i == VERSION) {
+            versionSelect+='<button onclick=showOlder("'+product+'","'+i+'","'+LOC+'") id="ACTIVE" title="'+ISSUED+'">'+i+'</button>';
+          } else {
+            versionSelect+='<button onclick=showOlder("'+product+'","'+i+'","'+LOC+'") id="INACTIVE" title="'+ISSUED+'">'+i+'</button>';
+          }
+        }
+      }
+//      if (dropdown != '') {
+//        dropdown +='</select>';
+//      }
+      document.getElementById('versions').innerHTML ='There are '+numVersions+' versions of this product stored.<br> '+versionSelect+' <a href="https://forecast.weather.gov/product.php?site='+WFO+'&product='+product+'&issuedby='+LOC+'" target="_blank"><button>Click for access to archived data.</button></a>';
+//      document.getElementById('versions').innerHTML ='There are '+numVersions+' versions of this product stored. '+dropdown+' <a href="https://forecast.weather.gov/product.php?site='+WFO+'&product='+product+'&issuedby='+LOC+'" target="_blank"><button>Click for access to archived data.</button></a>';
+    }
+    var UrlToGrab=text['@graph'][VERSION]['@id'];
+      $.getJSON(UrlToGrab, function (product) {
+        var rawProduct=product.productText;
+        var textProduct=rawProduct.replace(/\n\n/g, '<p>');
+            textProduct=rawProduct.replace(/\n/g, '<br>');
+            textProduct=textProduct.replace(/ /g, '\u00a0');
+        document.getElementById('textArea').innerHTML =textProduct;
+      });
+  })
+}
+
+function feed() {
+  var e = document.getElementById("VER");
+  feedArray=e.value.split(","); 
+  showOlder(feedArray[0],feedArray[1],feedArray[2]); 
+}
